@@ -38,7 +38,7 @@ component 'leatherman' do |pkg, settings, platform|
     toolchain = ''
     cmake = '/usr/local/bin/cmake'
     boost_static_flag = '-DBOOST_STATIC=OFF'
-    special_flags = "-DCMAKE_CXX_FLAGS='#{settings[:cflags]}' -DENABLE_CXX_WERROR=OFF -DLEATHERMAN_MOCK_CURL=FALSE"
+    special_flags = "-DCMAKE_CXX_FLAGS='#{settings[:cflags]} -Wno-deprecated-declarations' -DENABLE_CXX_WERROR=OFF -DLEATHERMAN_MOCK_CURL=FALSE"
     if platform.is_cross_compiled?
       pkg.environment 'CXX', 'clang++ -target arm64-apple-macos11' if platform.name =~ /osx-11/
       pkg.environment 'CXX', 'clang++ -target arm64-apple-macos12' if platform.name =~ /osx-12/
@@ -47,7 +47,7 @@ component 'leatherman' do |pkg, settings, platform|
     ruby = "#{settings[:host_ruby]} -r#{settings[:datadir]}/doc/rbconfig-#{settings[:ruby_version]}-orig.rb"
     toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
     cmake = '/opt/pl-build-tools/bin/cmake'
-    special_flags = "-DCMAKE_CXX_FLAGS='-DBOOST_UUID_RANDOM_PROVIDER_FORCE_POSIX'"
+    special_flags = "-DCMAKE_CXX_FLAGS='-DBOOST_UUID_RANDOM_PROVIDER_FORCE_POSIX -Wno-deprecated-declarations'"
     pkg.environment 'PATH' => "/opt/pl-build-tools/bin:$$PATH:#{settings[:bindir]}"
   elsif platform.is_solaris?
     if platform.architecture == 'sparc'
@@ -60,7 +60,7 @@ component 'leatherman' do |pkg, settings, platform|
     cmake = "/opt/pl-build-tools/i386-pc-solaris2.#{platform.os_version}/bin/cmake"
 
     # FACT-1156: If we build with -O3, solaris segfaults due to something in std::vector
-    special_flags += "-DCMAKE_CXX_FLAGS_RELEASE='-O2 -DNDEBUG'"
+    special_flags += "-DCMAKE_CXX_FLAGS_RELEASE='-O2 -DNDEBUG' -DCMAKE_CXX_FLAGS='-Wno-deprecated-declarations' "
   elsif platform.is_windows?
     make = "#{settings[:gcc_bindir]}/mingw32-make"
     pkg.environment 'PATH', "$(shell cygpath -u #{settings[:libdir]}):$(shell cygpath -u #{settings[:gcc_bindir]}):$(shell cygpath -u #{settings[:bindir]}):/cygdrive/c/Windows/system32:/cygdrive/c/Windows:/cygdrive/c/Windows/System32/WindowsPowerShell/v1.0"
@@ -68,7 +68,7 @@ component 'leatherman' do |pkg, settings, platform|
 
     cmake = 'C:/ProgramData/chocolatey/bin/cmake.exe -G "MinGW Makefiles"'
     toolchain = "-DCMAKE_TOOLCHAIN_FILE=#{settings[:tools_root]}/pl-build-toolchain.cmake"
-    special_flags += ' -DDYNAMICBASE=OFF' if platform.name =~ /windowsfips-2012r2/
+    special_flags += " -DDYNAMICBASE=OFF -DCMAKE_CXX_FLAGS='-Wno-deprecated-declarations' " if platform.name =~ /windowsfips-2012r2/
 
     # Use environment variable set in environment.bat to find locale files
     leatherman_locale_var = "-DLEATHERMAN_LOCALE_VAR='PUPPET_DIR' -DLEATHERMAN_LOCALE_INSTALL='share/locale'"
@@ -76,6 +76,7 @@ component 'leatherman' do |pkg, settings, platform|
         platform.is_aix?
     toolchain = '-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/pl-build-toolchain.cmake'
     cmake = '/opt/pl-build-tools/bin/cmake'
+    special_flags += " -DCMAKE_CXX_FLAGS='-Wno-deprecated-declarations' "
   else
     # These platforms use the default OS toolchain, rather than pl-build-tools
     pkg.environment 'CPPFLAGS', settings[:cppflags]
@@ -85,7 +86,7 @@ component 'leatherman' do |pkg, settings, platform|
     boost_static_flag = ''
 
     # Workaround for hanging leatherman tests (-fno-strict-overflow)
-    special_flags = " -DENABLE_CXX_WERROR=OFF -DCMAKE_CXX_FLAGS='#{settings[:cflags]} -fno-strict-overflow' "
+    special_flags = " -DENABLE_CXX_WERROR=OFF -DCMAKE_CXX_FLAGS='#{settings[:cflags]} -fno-strict-overflow -Wno-deprecated-declarations' "
   end
 
   if platform.is_linux?
