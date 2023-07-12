@@ -18,6 +18,11 @@ curl --output yum.sh https://artifactory.delivery.puppetlabs.net/artifactory/gen
 rpm -Uvh https://artifactory.delivery.puppetlabs.net/artifactory/rpm__remote_aix_linux_toolbox/RPMS/ppc/sed/sed-4.1.1-1.aix5.1.ppc.rpm;
 /opt/freeware/bin/sed -i 's|https://anonymous:anonymous@public.dhe.ibm.com/aix/freeSoftware/aixtoolbox/RPMS|https://artifactory.delivery.puppetlabs.net/artifactory/rpm__remote_aix_linux_toolbox/RPMS|' /opt/freeware/etc/yum/yum.conf)
 
+  # Since we updated openssl.base, run updtvpkg so that RPM packages that we install
+  # later build against the new openssl.
+  # See https://www.ibm.com/support/pages/understanding-aix-virtual-rpm-package-rpmrte
+  plat.provision_with 'updtvpkg'
+
   # yum.sh downloads rpm.rte containing several base packages including curl
   # 7.51. However, that version isn't compatible with cmake. If we update curl
   # specifically, then yum/python/libcurl will be in an inconsistent state. So
