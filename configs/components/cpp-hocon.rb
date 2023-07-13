@@ -17,6 +17,11 @@ component 'cpp-hocon' do |pkg, settings, platform|
       pkg.environment 'CXX', 'clang++ -target arm64-apple-macos11' if platform.name =~ /osx-11/
       pkg.environment 'CXX', 'clang++ -target arm64-apple-macos12' if platform.name =~ /osx-12/
     end
+
+    if platform.architecture == 'arm64' && platform.os_version.to_i >= 13
+      pkg.environment 'CXX', 'clang++'
+      cmake = '/opt/homebrew/bin/cmake'
+    end
   elsif platform.is_cross_compiled_linux?
     toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
     cmake = '/opt/pl-build-tools/bin/cmake'
