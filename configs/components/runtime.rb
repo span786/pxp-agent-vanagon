@@ -1,8 +1,12 @@
 component 'runtime' do |pkg, _settings, platform|
   if platform.is_cross_compiled_linux? || platform.name =~ /solaris-11/
-    pkg.build_requires "pl-binutils-#{platform.architecture}"
-    pkg.build_requires "pl-gcc-#{platform.architecture}"
-    pkg.build_requires "pl-binutils-#{platform.architecture}"
+    if platform.is_solaris? && !platform.is_cross_compiled? && platform.architecture == 'sparc'
+      pkg.build_requires 'pl-gcc10'
+      # using binutils in /usr/ccs/bin
+    else
+      pkg.build_requires "pl-gcc-#{platform.architecture}"
+      pkg.build_requires "pl-binutils-#{platform.architecture}"
+    end
   elsif platform.is_windows?
     pkg.build_requires "pl-gdbm-#{platform.architecture}"
     pkg.build_requires "pl-iconv-#{platform.architecture}"

@@ -45,8 +45,14 @@ component 'cpp-pcp-client' do |pkg, settings, platform|
     cmake = '/opt/pl-build-tools/bin/cmake'
     toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
   elsif platform.is_solaris?
-    cmake = "/opt/pl-build-tools/i386-pc-solaris2.#{platform.os_version}/bin/cmake"
-    toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
+    if !platform.is_cross_compiled? && platform.architecture == 'sparc'
+      cmake = '/opt/pl-build-tools/bin/cmake'
+      toolchain = ''
+      special_flags = " -DCMAKE_CXX_COMPILER=/opt/pl-build-tools/bin/g++ -DCMAKE_CXX_FLAGS='-pthreads' -DENABLE_CXX_WERROR=OFF "
+    else
+      cmake = "/opt/pl-build-tools/i386-pc-solaris2.#{platform.os_version}/bin/cmake"
+      toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
+    end
   elsif platform.is_windows?
     make = "#{settings[:gcc_root]}/bin/mingw32-make"
     pkg.environment 'CYGWIN', settings[:cygwin]
@@ -91,11 +97,17 @@ component 'cpp-pcp-client' do |pkg, settings, platform|
     ]
   end
 
+  cores = if platform.name =~ /solaris-11-sparc/ && !platform.is_cross_compiled?
+            '2' # limit to 2 so we don't run out of memory
+          else
+            "$(shell expr $(shell #{platform[:num_cores]}) + 1)"
+          end
+
   pkg.build do
-    ["#{make} -j$(shell expr $(shell #{platform[:num_cores]}) + 1)"]
+    ["#{make} -j#{cores}"]
   end
 
   pkg.install do
-    ["#{make} -j$(shell expr $(shell #{platform[:num_cores]}) + 1) install"]
+    ["#{make} -j#{cores} install"]
   end
 end
