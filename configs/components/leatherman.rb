@@ -11,8 +11,7 @@ component 'leatherman' do |pkg, settings, platform|
     pkg.build_requires 'pl-gettext'
   elsif platform.is_solaris?
     if !platform.is_cross_compiled? && platform.architecture == 'sparc'
-      # REMIND: workaround IPS server issues
-      # pkg.build_requires 'pl-cmake-sparc'
+      pkg.build_requires 'pl-cmake-sparc'
       # using opencsw ggettext
     else
       pkg.build_requires 'pl-cmake'

@@ -10,12 +10,7 @@ platform("solaris-11-sparc", override_name: true) do |plat|
   plat.add_build_repository "http://solaris-11-reposync.delivery.puppetlabs.net:81", "puppetlabs.com"
   plat.install_build_dependencies_with "pkg install ", " || [[ $? -eq 4 ]]"
 
-  # REMIND: workaround IPS server issues
-  plat.provision_with %[
-curl --insecure -LO 'https://artifactory.delivery.puppetlabs.net:443/artifactory/generic__buildsources/buildsources/pl-cmake-sparc@3.26.0,5.11-1.sparc.p5p';
-pkg set-publisher -p 'pl-cmake-sparc@3.26.0,5.11-1.sparc.p5p';
-pkg install pl-cmake-sparc || [[ $? -eq 4 ]];
-echo "# Write the noask file to a temporary directory
+  plat.provision_with %[echo "# Write the noask file to a temporary directory
 # please see man -s 4 admin for details about this file:
 # http://www.opensolarisforum.org/man/man4/admin.html
 #
