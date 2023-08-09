@@ -26,11 +26,18 @@ component 'cpp-hocon' do |pkg, settings, platform|
     toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
     cmake = '/opt/pl-build-tools/bin/cmake'
   elsif platform.is_solaris?
-    toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
-    cmake = "/opt/pl-build-tools/i386-pc-solaris2.#{platform.os_version}/bin/cmake"
+    if !platform.is_cross_compiled? && platform.architecture == 'sparc'
+      toolchain = ''
+      cmake = '/opt/pl-build-tools/bin/cmake'
+      pkg.environment 'PATH', '$(PATH):/opt/pl-build-tools/bin'
+      special_flags = " -DCMAKE_CXX_COMPILER=/opt/pl-build-tools/bin/g++ -DCMAKE_CXX_FLAGS='-pthreads' -DENABLE_CXX_WERROR=OFF "
+    else
+      toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
+      cmake = "/opt/pl-build-tools/i386-pc-solaris2.#{platform.os_version}/bin/cmake"
 
-    # FACT-1156: If we build with -O3, solaris segfaults due to something in std::vector
-    special_flags = "-DCMAKE_CXX_FLAGS_RELEASE='-O2 -DNDEBUG'"
+      # FACT-1156: If we build with -O3, solaris segfaults due to something in std::vector
+      special_flags = "-DCMAKE_CXX_FLAGS_RELEASE='-O2 -DNDEBUG'"
+    end
   elsif platform.is_windows?
     make = "#{settings[:gcc_bindir]}/mingw32-make"
     pkg.environment 'PATH', "$(shell cygpath -u #{settings[:prefix]}/lib):$(shell cygpath -u #{settings[:gcc_bindir]}):$(shell cygpath -u #{settings[:bindir]}):/cygdrive/c/Windows/system32:/cygdrive/c/Windows:/cygdrive/c/Windows/System32/WindowsPowerShell/v1.0"
@@ -90,7 +97,7 @@ component 'cpp-hocon' do |pkg, settings, platform|
            "#{make} test ARGS=-V"
          end
 
-  test = "LANG=C LC_ALL=C #{test}" if platform.is_solaris? && platform.architecture != 'sparc'
+  test = "LANG=C LC_ALL=C #{test}" if platform.is_solaris? && !platform.is_cross_compiled?
 
   pkg.build do
     # Until a `check` target exists, run tests are part of the build.

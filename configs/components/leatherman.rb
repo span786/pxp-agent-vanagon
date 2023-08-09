@@ -6,9 +6,18 @@ component 'leatherman' do |pkg, settings, platform|
   if platform.is_macos?
     pkg.build_requires 'cmake'
     pkg.build_requires 'gettext'
-  elsif platform.is_cross_compiled_linux? || platform.name =~ /solaris-11/
+  elsif platform.is_cross_compiled_linux?
     pkg.build_requires 'pl-cmake'
     pkg.build_requires 'pl-gettext'
+  elsif platform.is_solaris?
+    if !platform.is_cross_compiled? && platform.architecture == 'sparc'
+      # REMIND: workaround IPS server issues
+      # pkg.build_requires 'pl-cmake-sparc'
+      # using opencsw ggettext
+    else
+      pkg.build_requires 'pl-cmake'
+      pkg.build_requires 'pl-gettext'
+    end
   elsif platform.is_windows?
     pkg.build_requires 'cmake'
     pkg.build_requires "pl-gettext-#{platform.architecture}"
@@ -51,17 +60,26 @@ component 'leatherman' do |pkg, settings, platform|
     special_flags = "-DCMAKE_CXX_FLAGS='-DBOOST_UUID_RANDOM_PROVIDER_FORCE_POSIX -Wno-deprecated-declarations'"
     pkg.environment 'PATH' => "/opt/pl-build-tools/bin:$$PATH:#{settings[:bindir]}"
   elsif platform.is_solaris?
-    if platform.architecture == 'sparc'
-      ruby = "#{settings[:host_ruby]} -r#{settings[:datadir]}/doc/rbconfig-#{settings[:ruby_version]}-orig.rb"
-      special_flags += " -DCMAKE_EXE_LINKER_FLAGS=' /opt/puppetlabs/puppet/lib/libssl.so /opt/puppetlabs/puppet/lib/libcrypto.so /opt/puppetlabs/puppet/lib/libgcc_s.so' " if platform.name =~ /^solaris-10/
-      special_flags += " -DCMAKE_EXE_LINKER_FLAGS=' /opt/puppetlabs/puppet/lib/libssl.so /opt/puppetlabs/puppet/lib/libcrypto.so' " if platform.name =~ /^solaris-11/
+    if !platform.is_cross_compiled? && platform.architecture == 'sparc'
+      toolchain = ''
+      cmake = '/opt/pl-build-tools/bin/cmake'
+      pkg.environment 'PATH', "$(PATH):/opt/pl-build-tools/bin:#{settings[:bindir]}"
+      # Why does this work, but cpp-hocon needs to set CMAKE_CXX_COMPILER?
+      pkg.environment 'CXX', '/opt/pl-build-tools/bin/g++'
+      special_flags += " -DCMAKE_CXX_FLAGS='-pthreads -Wno-class-memaccess -Wno-deprecated-declarations -Wno-catch-value -DENABLE_CXX_WERROR=OFF' "
+    else
+      if platform.architecture == 'sparc'
+        ruby = "#{settings[:host_ruby]} -r#{settings[:datadir]}/doc/rbconfig-#{settings[:ruby_version]}-orig.rb"
+        special_flags += " -DCMAKE_EXE_LINKER_FLAGS=' /opt/puppetlabs/puppet/lib/libssl.so /opt/puppetlabs/puppet/lib/libcrypto.so /opt/puppetlabs/puppet/lib/libgcc_s.so' " if platform.name =~ /^solaris-10/
+        special_flags += " -DCMAKE_EXE_LINKER_FLAGS=' /opt/puppetlabs/puppet/lib/libssl.so /opt/puppetlabs/puppet/lib/libcrypto.so' " if platform.name =~ /^solaris-11/
+      end
+
+      toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
+      cmake = "/opt/pl-build-tools/i386-pc-solaris2.#{platform.os_version}/bin/cmake"
+
+      # FACT-1156: If we build with -O3, solaris segfaults due to something in std::vector
+      special_flags += "-DCMAKE_CXX_FLAGS_RELEASE='-O2 -DNDEBUG' -DCMAKE_CXX_FLAGS='-Wno-deprecated-declarations' "
     end
-
-    toolchain = "-DCMAKE_TOOLCHAIN_FILE=/opt/pl-build-tools/#{settings[:platform_triple]}/pl-build-toolchain.cmake"
-    cmake = "/opt/pl-build-tools/i386-pc-solaris2.#{platform.os_version}/bin/cmake"
-
-    # FACT-1156: If we build with -O3, solaris segfaults due to something in std::vector
-    special_flags += "-DCMAKE_CXX_FLAGS_RELEASE='-O2 -DNDEBUG' -DCMAKE_CXX_FLAGS='-Wno-deprecated-declarations' "
   elsif platform.is_windows?
     make = "#{settings[:gcc_bindir]}/mingw32-make"
     pkg.environment 'PATH', "$(shell cygpath -u #{settings[:libdir]}):$(shell cygpath -u #{settings[:gcc_bindir]}):$(shell cygpath -u #{settings[:bindir]}):/cygdrive/c/Windows/system32:/cygdrive/c/Windows:/cygdrive/c/Windows/System32/WindowsPowerShell/v1.0"
@@ -127,9 +145,9 @@ component 'leatherman' do |pkg, settings, platform|
   end
 
   # Make test will explode horribly in a cross-compile situation
-  # Tests will be skipped on AIX until they are expected to pass
-  if !platform.is_cross_compiled? && !platform.is_aix?
-    test_locale = 'LANG=C LC_ALL=C' if platform.is_solaris? && platform.architecture != 'sparc' || platform.name =~ /debian-10/
+  # Tests will be skipped on AIX and Solaris SPARC until they are expected to pass
+  if !platform.is_cross_compiled? && !platform.is_aix? && !(platform.is_solaris? && !platform.is_cross_compiled? && platform.architecture == 'sparc')
+    test_locale = 'LANG=C LC_ALL=C' if platform.is_solaris? || platform.name =~ /debian-10/
 
     pkg.check do
       ["LEATHERMAN_RUBY=#{settings[:libdir]}/$(shell #{ruby} -e 'print RbConfig::CONFIG[\"LIBRUBY_SO\"]') \
