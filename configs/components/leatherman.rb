@@ -130,7 +130,7 @@ component 'leatherman' do |pkg, settings, platform|
   # Make test will explode horribly in a cross-compile situation
   # Tests will be skipped on AIX until they are expected to pass
   if !platform.is_cross_compiled? && !platform.is_aix?
-    test_locale = 'LANG=C LC_ALL=C' if platform.is_solaris? && platform.architecture != 'sparc' || platform.name =~ /debian-10/
+    test_locale = 'LANG=C LC_ALL=C' if (platform.is_solaris? && platform.architecture != 'sparc') || platform.name =~ /debian-10/
 
     pkg.check do
       ["LEATHERMAN_RUBY=#{settings[:libdir]}/$(shell #{ruby} -e 'print RbConfig::CONFIG[\"LIBRUBY_SO\"]') \
