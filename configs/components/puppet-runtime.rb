@@ -20,7 +20,7 @@ component 'puppet-runtime' do |pkg, settings, platform|
                       # so cmd.exe was not working as expected.
                       [
                         "gunzip -c #{tarball_name} | tar -k -C /cygdrive/c/ -xf -",
-                        "chmod 755 #{settings[:bindir].sub(/C:/, '/cygdrive/c')}/*"
+                        "chmod 755 #{settings[:bindir].sub('C:', '/cygdrive/c')}/*"
                       ]
                     elsif platform.is_macos?
                       # We can't untar into '/' because of SIP on macOS; Just copy the contents
