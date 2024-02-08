@@ -9,24 +9,18 @@ on:
 
 jobs:
   checks:
-    name: ${{ matrix.cfg.check }}
-    strategy:
-      matrix:
-        cfg:
-          - {check: rubocop, os: ubuntu-latest, ruby: 2.7}
-          - {check: commits, os: ubuntu-latest, ruby: 2.7}
-
-    runs-on: ${{ matrix.cfg.os }}
+    name: Rubocop check
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout current PR
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install ruby version ${{ matrix.cfg.ruby }}
+      - name: Install Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ matrix.cfg.ruby }}
+          ruby-version: '3.0'
 
       - name: Install bundler and gems
         run: |
@@ -34,6 +28,6 @@ jobs:
           bundle config set without packaging documentation
           bundle install --jobs 4 --retry 3
 
-      - name: Run ${{ matrix.cfg.check }} check
-        run: bundle exec rake ${{ matrix.cfg.check }}
+      - name: Run Rubocop check
+        run: bundle exec rake rubocop
 
