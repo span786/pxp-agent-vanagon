@@ -75,6 +75,8 @@ component 'pxp-agent' do |pkg, settings, platform|
 
   elsif platform.name =~ /el-[67]|redhatfips-7|sles-12|ubuntu-18.04-amd64/
     # use default that is pl-build-tools
+  elsif platform.name =~ /sles-11/
+    special_flags += "-DCMAKE_CXX_FLAGS='#{settings[:cflags]}' -DENABLE_CXX_WERROR=OFF"
   else
     # These platforms use the default OS toolchain, rather than pl-build-tools
     cmake = 'cmake'
